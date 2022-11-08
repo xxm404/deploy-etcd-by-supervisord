@@ -1,0 +1,118 @@
+#!/bin/bash
+set -e
+trap "echo Fail unexpectedly on line \$LINENO!" ERR
+
+PID=$$
+[[ -z $PID ]] && PID=1000
+
+FILE_PATH=`readlink -f $0`
+
+CUR_DIR=`dirname $FILE_PATH`
+BASE_DIR=$CUR_DIR/..
+SUPERVISE="/home/work/.local/bin/supervisord"
+SUPERVISE_CTL="/home/work/.local/bin/supervisorctl"
+CONF="$BASE_DIR/conf/supervisord.conf"
+
+#echo $BASE_DIR
+#/usr/bin/python3 /home/work/.local/bin/supervisord -c supervisord.conf
+
+usage()
+{
+    cat <<"EOT";
+control [start|stop|restart] [program]
+
+    examples:
+        control start 
+        control start etcd 
+EOT
+echo 
+}
+
+function log_debug() 
+{
+    echo `date +"DEBUG[$PID]: [%Y-%m-%d %k:%M:%S "` "$1"
+}
+
+control_start() {
+    log_debug "control_start [$*]" 
+    program=$2
+    echo $program
+    if [[ -z $program ]]
+    then
+        /usr/bin/python3 $SUPERVISE -c $CONF
+        #usage
+        #exit 1
+    else
+        /usr/bin/python3 $SUPERVISE_CTL -c $CONF start $program
+    fi
+    
+}
+
+control_stop() {
+    log_debug "control_stop [$*]" 
+    program=$2
+    if [[ -z $program ]]
+    then
+        log_debug "you can not stop all program"
+        usage
+        exit 1
+    else
+        /usr/bin/python3 $SUPERVISE_CTL -c $CONF stop $program
+    fi
+}
+
+control_restart() {
+    log_debug "control_restart [$*]" 
+    program=$2
+    if [[ -z $program ]]
+    then
+        log_debug "you can not stop all program"
+        usage
+        exit 1
+    else
+        /usr/bin/python3 $SUPERVISE_CTL -c $CONF restart $program
+    fi
+}
+
+control_reload() {
+    log_debug "control_reload [$*]" 
+    /usr/bin/python3 $SUPERVISE_CTL -c $CONF reload
+}
+
+control_check() {
+    log_debug "control_check" "echo"
+    /usr/bin/python3 $SUPERVISE_CTL -c $CONF status
+}
+
+control_check_log() {
+    log_debug "control_check_log" "echo"
+}
+
+
+ACTION=$1
+
+cd $OSP_DIR
+
+case "X$ACTION" in
+    Xstart)
+        control_start $*
+        ;;
+    Xrestart)
+        control_restart $*
+        ;;
+    Xstop)
+        control_stop $*
+        ;;
+    Xreload)
+        control_reload $*
+        ;;
+    Xcheck)
+        control_check $*
+        ;;
+    Xcheck_log)
+        control_check_log $*
+        ;;
+    *)
+        usage
+        ;;
+esac
