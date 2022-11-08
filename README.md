@@ -22,3 +22,10 @@ environment=ETCD_NAME="config-center-1",ETCD_DATA_DIR="data.etcd",ETCD_INITIAL_A
 
 ## Use
 Use control script to manage etcd task.
+```
+control [start|stop|restart] [program]
+
+    examples:
+        control start 
+        control start etcd 
+```
